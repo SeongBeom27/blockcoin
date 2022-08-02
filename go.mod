@@ -1,3 +1,3 @@
-module github.com/SeongBeom27/blockcoin
+module github.com/baaami/blockcoin
 
 go 1.18
