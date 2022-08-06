@@ -13,6 +13,8 @@ type Block struct {
 }
 
 type blockchain struct {
+	// block의 pointer를 넣음
+	// block chain이 매우 길어질 수 있으므로 block들을 복사하지 않기 위하여
 	blocks []*Block
 }
 
