@@ -2,15 +2,24 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/baaami/blockcoin/blockchain"
 )
 
 const port string = ":4000"
 
+type homeData struct {
+	PageTitle string
+	Blocks []*blockchain.Block
+}
+
 func home(w http.ResponseWriter, r *http.Request) {
-	// Fprint : writer에 출력험
-	fmt.Fprint(w, "Hello from Home!")
+	templ := template.Must(template.ParseFiles("templates/home.gohtml"))
+	data := homeData{"Home", blockchain.GetBlockchain().AllBlocks()}
+	templ.Execute(w, data)
 }
 
 func main() {
