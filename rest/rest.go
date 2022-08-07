@@ -8,6 +8,7 @@ import (
 
 	"github.com/baaami/blockcoin/blockchain"
 	"github.com/baaami/blockcoin/utils"
+	"github.com/gorilla/mux"
 )
 
 var port string
@@ -85,12 +86,20 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func block(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	fmt.Println(id)
+}
+
 func Start(aPort int) {
-	handler := http.NewServeMux()
+	router := mux.NewRouter()
 	port =  fmt.Sprintf(":%d", aPort)
 
-	handler.HandleFunc("/", documentation)
-	handler.HandleFunc("/blocks", blocks)
+	router.HandleFunc("/", documentation).Methods("GET")
+	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
+	router.HandleFunc("/block/{id:[0-9]+}", block).Methods("GET")
+
 	fmt.Printf("Listening on http://localhost%s\n", port)
-	log.Fatal(http.ListenAndServe(port, handler))
+	log.Fatal(http.ListenAndServe(port, router))
 }
