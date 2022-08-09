@@ -1,7 +1,7 @@
 package main
 
-import "github.com/baaami/blockcoin/cli"
+import "github.com/baaami/blockcoin/blockchain"
 
 func main() {
-	cli.Start()
+	blockchain.Blockchain()
 }
