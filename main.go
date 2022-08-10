@@ -1,7 +1,11 @@
 package main
 
-import "github.com/baaami/blockcoin/blockchain"
+import (
+	"github.com/baaami/blockcoin/blockchain"
+	"github.com/baaami/blockcoin/cli"
+)
 
 func main() {
-	blockchain.Blockchain().AddBlock("First")
+	blockchain.Blockchain()
+	cli.Start()
 }

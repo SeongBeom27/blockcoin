@@ -9,11 +9,11 @@ import (
 	"github.com/baaami/blockcoin/rest"
 )
 
-func usage(){
+func usage() {
 	fmt.Printf("Welcome to block coin\n\n")
 	fmt.Printf("Please use the following flags:\n\n")
 	fmt.Printf("-port=4000:		Set the PORT of the server\n")
-	fmt.Printf("-mode=rest:		Choose between 'html' and 'rest'\n")	
+	fmt.Printf("-mode=rest:		Choose between 'html' and 'rest'\n")
 	os.Exit(1)
 }
 
