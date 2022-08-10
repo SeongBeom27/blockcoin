@@ -34,6 +34,28 @@ func (b *blockchain) AddBlock(data string) {
 	b.persist()
 }
 
+/*
+	모든 block을 획득
+*/
+func (b *blockchain) Blocks() []*Block {
+	var blocks []*Block
+
+	// 1. NewestHash로 마지막 block을 찾는다
+	hashCursor := b.NewestHash
+
+	// 2. 마지막 block부터 prevHash를 사용하여 첫번째 블럭까지 모두 append
+	for {
+		block, _ := FindBlock(hashCursor)
+		blocks = append(blocks, block)
+		if block.PrevHash != "" {
+			hashCursor = block.PrevHash
+		} else {
+			break
+		}
+	}
+	return blocks
+}
+
 // singleton 인스턴스 획득
 func Blockchain() *blockchain {
 	if b == nil {

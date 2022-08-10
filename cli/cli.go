@@ -3,7 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"os"
+	"runtime"
 
 	"github.com/baaami/blockcoin/explorer"
 	"github.com/baaami/blockcoin/rest"
@@ -14,7 +14,8 @@ func usage() {
 	fmt.Printf("Please use the following flags:\n\n")
 	fmt.Printf("-port=4000:		Set the PORT of the server\n")
 	fmt.Printf("-mode=rest:		Choose between 'html' and 'rest'\n")
-	os.Exit(1)
+	// 모든 함수를 제거하기 전에 defer 를 먼저 이행
+	runtime.Goexit()
 }
 
 func Start() {
