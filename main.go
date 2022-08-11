@@ -1,11 +1,23 @@
 package main
 
 import (
-	"github.com/baaami/blockcoin/cli"
-	"github.com/baaami/blockcoin/db"
+	"crypto/sha256"
+	"fmt"
+	"strings"
 )
 
 func main() {
-	defer db.DB().Close()
-	cli.Start()
+	difficulty := 2
+	target := strings.Repeat("0", difficulty)
+
+	nonce := 1
+	for {
+		hash := fmt.Sprintf("%x", sha256.Sum256([]byte("hello"+fmt.Sprint(nonce))))
+		fmt.Printf("Hash:%s\nTarget:%s\nNonce:%d\n", hash, target, nonce)
+		if strings.HasPrefix(hash, target) {
+			return
+		} else {
+			nonce++
+		}
+	}
 }
