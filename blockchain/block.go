@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/baaami/blockcoin/db"
 	"github.com/baaami/blockcoin/utils"
@@ -41,16 +42,33 @@ func FindBlock(hash string) (*Block, error) {
 	return block, nil
 }
 
+func (b *Block) mine() {
+	// insert "00"
+	target := strings.Repeat("0", b.Difficulty)
+	for {
+		blockAsString := fmt.Sprint(b)
+		hash := fmt.Sprintf("%x", sha256.Sum256([]byte(blockAsString)))
+		fmt.Printf("Block as String:%s\nHash:%s\nTarget:%s\nNonce:%d\n\n\n", blockAsString, hash, target, b.Nonce)
+		if strings.HasPrefix(hash, target) {
+			b.Hash = hash
+			break
+		} else {
+			b.Nonce++
+		}
+	}
+}
+
 func createBlock(data string, prevHash string, height int) *Block {
 	block := Block{
 		Data:     data,
 		Hash:     "",
 		PrevHash: prevHash,
 		Height:   height,
+		Difficulty: difficulty,
+		Nonce: 		0,
 	}
-	payload := block.Data + block.PrevHash + fmt.Sprint(block.Height)
-	// block 해싱
-	block.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(payload)))
+	// 작업 증명
+	block.mine()
 	// block을 db에 저장
 	block.persist()
 	return &block
