@@ -89,12 +89,13 @@ func (b *blockchain) recalculateDifficulty() int {
 	return b.CurrentDifficulty
 }
 
-// difficulty를 구하는 것은 블록 별로 진행되야 할 일이 아님
+// mining의 difficulty를 결정하는 함수
 func (b *blockchain) difficulty() int {
 	if b.Height == 0 {
 		return defaultDifficulty
 	} else if b.Height % difficultyInterval == 0 {
 		// recalculate the difficulty
+		return b.recalculateDifficulty()
 	} else {
 		return b.CurrentDifficulty
 	}
