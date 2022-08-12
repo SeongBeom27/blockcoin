@@ -1,11 +1,17 @@
 package blockchain
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/baaami/blockcoin/db"
 	"github.com/baaami/blockcoin/utils"
+)
+
+const (
+	defaultDifficulty int = 2
+	difficultyInterval int = 5		// n개의 block 간 시간을 비교하기 위한 기준 n 
+	blockInterval int = 2			// block 1개가 생성되는데 걸리는 목표 시간
+	allowedRange	int = 2
 )
 
 type blockchain struct {
@@ -13,6 +19,8 @@ type blockchain struct {
 	NewestHash string `json:"newestHash"`
 	// 2. Height를 알아야함
 	Height int `json:"height"`
+
+	CurrentDifficulty int `json:"currentDifficulty"`
 }
 
 // sigleton
@@ -31,6 +39,7 @@ func (b *blockchain) AddBlock(data string) {
 	block := createBlock(data, b.NewestHash, b.Height+1)
 	b.NewestHash = block.Hash
 	b.Height = block.Height
+	b.CurrentDifficulty = block.Difficulty
 	b.persist()
 }
 
@@ -56,13 +65,50 @@ func (b *blockchain) Blocks() []*Block {
 	return blocks
 }
 
+func (b *blockchain) recalculateDifficulty() int {
+	// difficultyInterval 개의 블록을 생성하는데 얼마나 걸렸는지 알아야함
+	// 너무 오래 걸리면 difficulty를 줄이고 너무 적게 걸리면 늘려야함
+
+	// 최신 block을 찾음
+	// 10번일 경우 5번 block부터 5개의 block이 생성되는 동안 걸린 시간을 확인
+
+	// 모든 block 획득
+	allBlocks := b.Blocks()		
+	// 최신 block 획득
+	newestBlock := allBlocks[0]
+
+	lastRecalculatedBlock := allBlocks[difficultyInterval - 1]
+	actualTime := (newestBlock.Timestamp/60) - (lastRecalculatedBlock.Timestamp/60)
+	expectedTime := difficultyInterval * blockInterval
+
+	if actualTime <= (expectedTime - allowedRange) {
+		return b.CurrentDifficulty + 1
+	} else if actualTime >= (expectedTime + allowedRange) {
+		return b.CurrentDifficulty - 1
+	} 
+	return b.CurrentDifficulty
+}
+
+// difficulty를 구하는 것은 블록 별로 진행되야 할 일이 아님
+func (b *blockchain) difficulty() int {
+	if b.Height == 0 {
+		return defaultDifficulty
+	} else if b.Height % difficultyInterval == 0 {
+		// recalculate the difficulty
+	} else {
+		return b.CurrentDifficulty
+	}
+}
+
 // singleton 인스턴스 획득
 func Blockchain() *blockchain {
 	if b == nil {
 		// 처음 초기화하는 부분은 반드시 1번만 수행되도록
 		once.Do(func() {
 			// hash값이 없고, height가 0인 블록체인을 생성
-			b = &blockchain{"", 0}
+			b = &blockchain{
+				Height: 0,
+			}
 
 			// search for checkpoint on the db
 			checkpoint := db.Checkpoint()
@@ -77,7 +123,5 @@ func Blockchain() *blockchain {
 			}
 		})
 	}
-
-	fmt.Printf("NewestHash: %s, Height:%d\n", b.NewestHash, b.Height)
 	return b
 }

@@ -1,10 +1,9 @@
 package blockchain
 
 import (
-	"crypto/sha256"
 	"errors"
-	"fmt"
 	"strings"
+	"time"
 
 	"github.com/baaami/blockcoin/db"
 	"github.com/baaami/blockcoin/utils"
@@ -19,6 +18,7 @@ type Block struct {
 	Height     int    `json:"height"`
 	Difficulty int    `json:"difficulty"`
 	Nonce      int    `json:"nonce"`
+	Timestamp  int	  `json:"timestamp"`
 }
 
 func (b *Block) persist() {
@@ -46,10 +46,9 @@ func (b *Block) mine() {
 	// insert "00"
 	target := strings.Repeat("0", b.Difficulty)
 	for {
-		blockAsString := fmt.Sprint(b)
-		hash := fmt.Sprintf("%x", sha256.Sum256([]byte(blockAsString)))
-		fmt.Printf("Block as String:%s\nHash:%s\nTarget:%s\nNonce:%d\n\n\n", blockAsString, hash, target, b.Nonce)
+		hash := utils.Hash(b)
 		if strings.HasPrefix(hash, target) {
+			b.Timestamp = int(time.Now().Unix())
 			b.Hash = hash
 			break
 		} else {
@@ -64,7 +63,7 @@ func createBlock(data string, prevHash string, height int) *Block {
 		Hash:     "",
 		PrevHash: prevHash,
 		Height:   height,
-		Difficulty: difficulty,
+		Difficulty: Blockchain().difficulty(),
 		Nonce: 		0,
 	}
 	// 작업 증명
