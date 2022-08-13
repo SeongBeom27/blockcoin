@@ -101,6 +101,40 @@ func (b *blockchain) difficulty() int {
 	}
 }
 
+// transactions의 모든 거래 내역 출력을 slice로 반환하는 함수
+func (b *blockchain) txOuts() []*TxOut {
+	var txOuts []*TxOut
+	blocks := b.Blocks()
+	for _, block := range blocks {
+		for _, tx := range block.Transactions {
+			txOuts = append(txOuts, tx.TxOuts...)
+		}
+	}
+	return txOuts
+}
+
+// 모든 거래 내역 출력 중 address의 출력만 가져와서 슬라이스로 반환하는 함수
+func (b *blockchain) TxOutsByAddress(address string) []*TxOut {
+	var ownedTxOuts []*TxOut
+	txOuts := b.txOuts()
+	for _, txOut := range txOuts {
+		if txOut.Owner == address {
+			ownedTxOuts = append(ownedTxOuts, txOut)
+		}
+	}
+
+	return ownedTxOuts
+}
+
+func (b *blockchain) BalanceByAddress(address string) int {
+	txOuts := b.TxOutsByAddress(address)
+	var amount int
+	for _, txOut := range txOuts {
+		amount += txOut.Amount
+	}
+	return amount
+}
+
 // singleton 인스턴스 획득
 func Blockchain() *blockchain {
 	if b == nil {
