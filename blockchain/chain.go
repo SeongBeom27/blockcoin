@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	defaultDifficulty int = 2
-	difficultyInterval int = 5		// n개의 block 간 시간을 비교하기 위한 기준 n 
-	blockInterval int = 2			// block 1개가 생성되는데 걸리는 목표 시간
-	allowedRange	int = 2
+	defaultDifficulty  int = 2
+	difficultyInterval int = 5 // n개의 block 간 시간을 비교하기 위한 기준 n
+	blockInterval      int = 2 // block 1개가 생성되는데 걸리는 목표 시간
+	allowedRange       int = 2
 )
 
 type blockchain struct {
@@ -35,8 +35,8 @@ func (b *blockchain) persist() {
 	db.SaveBlockchain(utils.ToBytes(b))
 }
 
-func (b *blockchain) AddBlock(data string) {
-	block := createBlock(data, b.NewestHash, b.Height+1)
+func (b *blockchain) AddBlock() {
+	block := createBlock(b.NewestHash, b.Height+1)
 	b.NewestHash = block.Hash
 	b.Height = block.Height
 	b.CurrentDifficulty = block.Difficulty
@@ -73,19 +73,19 @@ func (b *blockchain) recalculateDifficulty() int {
 	// 10번일 경우 5번 block부터 5개의 block이 생성되는 동안 걸린 시간을 확인
 
 	// 모든 block 획득
-	allBlocks := b.Blocks()		
+	allBlocks := b.Blocks()
 	// 최신 block 획득
 	newestBlock := allBlocks[0]
 
-	lastRecalculatedBlock := allBlocks[difficultyInterval - 1]
-	actualTime := (newestBlock.Timestamp/60) - (lastRecalculatedBlock.Timestamp/60)
+	lastRecalculatedBlock := allBlocks[difficultyInterval-1]
+	actualTime := (newestBlock.Timestamp / 60) - (lastRecalculatedBlock.Timestamp / 60)
 	expectedTime := difficultyInterval * blockInterval
 
 	if actualTime <= (expectedTime - allowedRange) {
 		return b.CurrentDifficulty + 1
 	} else if actualTime >= (expectedTime + allowedRange) {
 		return b.CurrentDifficulty - 1
-	} 
+	}
 	return b.CurrentDifficulty
 }
 
@@ -93,7 +93,7 @@ func (b *blockchain) recalculateDifficulty() int {
 func (b *blockchain) difficulty() int {
 	if b.Height == 0 {
 		return defaultDifficulty
-	} else if b.Height % difficultyInterval == 0 {
+	} else if b.Height%difficultyInterval == 0 {
 		// recalculate the difficulty
 		return b.recalculateDifficulty()
 	} else {
@@ -117,7 +117,7 @@ func Blockchain() *blockchain {
 			// if checkpoint exist, decode b from bytes (b는 bytes로 저장되어있음)
 			if checkpoint == nil {
 				// checkpoint가 없음 즉, db 자체가 없음
-				b.AddBlock("Genesis")
+				b.AddBlock()
 			} else {
 				// decode b from bytes
 				b.restore(checkpoint)

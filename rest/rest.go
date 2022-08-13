@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/baaami/blockcoin/blockchain"
-	"github.com/baaami/blockcoin/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -27,10 +26,6 @@ type urlDescription struct {
 	Description string `json:"description"`
 	// omitempty : data가 비어있지 않은 경우에만 출력
 	Payload string `json:"payload,omitempty"`
-}
-
-type addBlockBody struct {
-	Message string
 }
 
 type errorResponse struct {
@@ -90,9 +85,7 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 		// json into struct
 
 		// 1. data 구조 확인
-		var addBlockBody addBlockBody
-		utils.HandleErr(json.NewDecoder(r.Body).Decode(&addBlockBody))
-		blockchain.Blockchain().AddBlock(addBlockBody.Message)
+		blockchain.Blockchain().AddBlock()
 		rw.WriteHeader(http.StatusCreated)
 	}
 }
