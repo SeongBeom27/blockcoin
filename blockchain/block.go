@@ -59,15 +59,16 @@ func (b *Block) mine() {
 
 func createBlock(prevHash string, height int) *Block {
 	block := Block{
-		Hash:         "",
-		PrevHash:     prevHash,
-		Height:       height,
-		Difficulty:   Blockchain().difficulty(),
-		Nonce:        0,
-		Transactions: []*Tx{makeCoinbaseTx("baami")},
+		Hash:       "",
+		PrevHash:   prevHash,
+		Height:     height,
+		Difficulty: Blockchain().difficulty(),
+		Nonce:      0,
 	}
 	// 작업 증명
 	block.mine()
+	// 채굴을 끝내고 해시를 찾고 전부 끝낸 다음에 transaction들을 block에 넣어줌
+	block.Transactions = Mempool.TxToConfirm()
 	// block을 db에 저장
 	block.persist()
 	return &block
