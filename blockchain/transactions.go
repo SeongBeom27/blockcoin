@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/baaami/blockcoin/utils"
@@ -19,7 +20,7 @@ var Mempool *mempool = &mempool{}
 
 // Transaction
 type Tx struct {
-	Id        string   `json:"id"`
+	ID        string   `json:"id"`
 	Timestamp int      `json:"timestamp"`
 	TxIns     []*TxIn  `json:"txins"`
 	TxOuts    []*TxOut `json:"txouts"`
@@ -27,7 +28,7 @@ type Tx struct {
 
 // 거래 내역(transactions) 들에 대한 hash 값으로 id를 생성
 func (t *Tx) getId() {
-	t.Id = utils.Hash(t)
+	t.ID = utils.Hash(t)
 }
 
 type TxIn struct {
@@ -55,7 +56,7 @@ func makeCoinbaseTx(address string) *Tx {
 		{address, minerReward},
 	}
 	tx := Tx{
-		Id:        "",
+		ID:        "",
 		Timestamp: int(time.Now().Unix()),
 		TxIns:     txIns,
 		TxOuts:    txOuts,
@@ -65,7 +66,41 @@ func makeCoinbaseTx(address string) *Tx {
 }
 
 func makeTx(from, to string, amount int) (*Tx, error) {
+	if Blockchain().BalanceByAddress(from) < amount {
+		return nil, errors.New("not enough money")
+	}
 
+	var txOuts []*TxOut
+	var txIns []*TxIn
+	total := 0
+
+	// 1. name이 from인 input에서 참조되지 않은 트랜잭션 획득
+	uTxOuts := Blockchain().UTxOutsByAddress(from)
+	for _, uTxOut := range uTxOuts {
+		if total > amount {
+			break
+		}
+		txIn := &TxIn{uTxOut.TxID, uTxOut.Index, from}
+		txIns = append(txIns, txIn)
+		total += uTxOut.Amount
+	}
+
+	if change := total - amount; change != 0 {
+		changeTxOut := &TxOut{from, change}
+		// 잔돈
+		txOuts = append(txOuts, changeTxOut)
+	}
+	// 돈을 받는 사람
+	txOut := &TxOut{to, amount}
+	txOuts = append(txOuts, txOut)
+	tx := &Tx{
+		ID:        "",
+		Timestamp: int(time.Now().Unix()),
+		TxIns:     txIns,
+		TxOuts:    txOuts,
+	}
+	tx.getId()
+	return tx, nil
 }
 
 func (m *mempool) AddTx(to string, amount int) error {
