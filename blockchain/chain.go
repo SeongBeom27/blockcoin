@@ -101,33 +101,33 @@ func (b *blockchain) difficulty() int {
 	}
 }
 
-// transactions의 모든 거래 내역 출력을 slice로 반환하는 함수
-func (b *blockchain) txOuts() []*TxOut {
-	var txOuts []*TxOut
-	blocks := b.Blocks()
-	for _, block := range blocks {
-		for _, tx := range block.Transactions {
-			txOuts = append(txOuts, tx.TxOuts...)
-		}
-	}
-	return txOuts
-}
-
 // 모든 거래 내역 출력 중 address의 출력만 가져와서 슬라이스로 반환하는 함수
-func (b *blockchain) TxOutsByAddress(address string) []*TxOut {
-	var ownedTxOuts []*TxOut
-	txOuts := b.txOuts()
-	for _, txOut := range txOuts {
-		if txOut.Owner == address {
-			ownedTxOuts = append(ownedTxOuts, txOut)
+func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
+	var uTxOuts []*UTxOut
+	creatorTxs := make(map[string]bool)
+	for _, block := range b.Blocks() {
+		for _, tx := range block.Transactions {
+			for _, input := range tx.TxIns {
+				if input.Owner == address {
+					creatorTxs[input.TxID] = true
+				}
+			}
+
+			for index, output := range tx.TxOuts {
+				if output.Owner == address {
+					if _, ok := creatorTxs[tx.Id]; !ok {
+						uTxOuts = append(uTxOuts, &UTxOut{tx.Id, index, output.Amount})
+					}
+				}
+			}
 		}
 	}
 
-	return ownedTxOuts
+	return uTxOuts
 }
 
 func (b *blockchain) BalanceByAddress(address string) int {
-	txOuts := b.TxOutsByAddress(address)
+	txOuts := b.UTxOutsByAddress(address)
 	var amount int
 	for _, txOut := range txOuts {
 		amount += txOut.Amount
