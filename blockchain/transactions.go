@@ -50,10 +50,12 @@ type UTxOut struct {
 
 func isOnMempool(UTxOut *UTxOut) bool {
 	exists := false
+Outer:
 	for _, tx := range Mempool.Txs {
 		for _, input := range tx.TxIns {
 			if input.TxID == UTxOut.TxID && input.Index == UTxOut.Index {
 				exists = true
+				break Outer
 			}
 		}
 	}
@@ -78,7 +80,7 @@ func makeCoinbaseTx(address string) *Tx {
 }
 
 func makeTx(from, to string, amount int) (*Tx, error) {
-	if Blockchain().BalanceByAddress(from) < amount {
+	if BalanceByAddress(from, Blockchain()) < amount {
 		return nil, errors.New("not enough money")
 	}
 
@@ -87,7 +89,7 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 	total := 0
 
 	// 1. name이 from인 input에서 참조되지 않은 트랜잭션 획득
-	uTxOuts := Blockchain().UTxOutsByAddress(from)
+	uTxOuts := UTxOutsByAddress(from, Blockchain())
 	for _, uTxOut := range uTxOuts {
 		if total > amount {
 			break

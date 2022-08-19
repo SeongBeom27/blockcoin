@@ -27,26 +27,10 @@ type blockchain struct {
 var b *blockchain
 var once sync.Once
 
-func (b *blockchain) restore(data []byte) {
-	utils.FromBytes(b, data)
-}
-
-func (b *blockchain) persist() {
-	db.SaveBlockchain(utils.ToBytes(b))
-}
-
-func (b *blockchain) AddBlock() {
-	block := createBlock(b.NewestHash, b.Height+1)
-	b.NewestHash = block.Hash
-	b.Height = block.Height
-	b.CurrentDifficulty = block.Difficulty
-	b.persist()
-}
-
 /*
 	모든 block을 획득
 */
-func (b *blockchain) Blocks() []*Block {
+func Blocks(b *blockchain) []*Block {
 	var blocks []*Block
 
 	// 1. NewestHash로 마지막 block을 찾는다
@@ -65,7 +49,31 @@ func (b *blockchain) Blocks() []*Block {
 	return blocks
 }
 
-func (b *blockchain) recalculateDifficulty() int {
+// 함수, 메서드 구분하는 방법
+/**
+	메서드
+		- 함수가 구조체를 변화시킬 경우
+	함수
+		- 함수가 구조체를 변화시키지 않는 경우
+/*/
+
+func (b *blockchain) restore(data []byte) {
+	utils.FromBytes(b, data)
+}
+
+func (b *blockchain) AddBlock() {
+	block := createBlock(b.NewestHash, b.Height+1, getDifficulty(b))
+	b.NewestHash = block.Hash
+	b.Height = block.Height
+	b.CurrentDifficulty = block.Difficulty
+	persistBlockchain(b)
+}
+
+func persistBlockchain(b *blockchain) {
+	db.SaveBlockchain(utils.ToBytes(b))
+}
+
+func recalculateDifficulty(b *blockchain) int {
 	// difficultyInterval 개의 블록을 생성하는데 얼마나 걸렸는지 알아야함
 	// 너무 오래 걸리면 difficulty를 줄이고 너무 적게 걸리면 늘려야함
 
@@ -73,7 +81,7 @@ func (b *blockchain) recalculateDifficulty() int {
 	// 10번일 경우 5번 block부터 5개의 block이 생성되는 동안 걸린 시간을 확인
 
 	// 모든 block 획득
-	allBlocks := b.Blocks()
+	allBlocks := Blocks(b)
 	// 최신 block 획득
 	newestBlock := allBlocks[0]
 
@@ -90,22 +98,22 @@ func (b *blockchain) recalculateDifficulty() int {
 }
 
 // mining의 difficulty를 결정하는 함수
-func (b *blockchain) difficulty() int {
+func getDifficulty(b *blockchain) int {
 	if b.Height == 0 {
 		return defaultDifficulty
 	} else if b.Height%difficultyInterval == 0 {
 		// recalculate the difficulty
-		return b.recalculateDifficulty()
+		return recalculateDifficulty(b)
 	} else {
 		return b.CurrentDifficulty
 	}
 }
 
 // 모든 거래 내역 출력 중 address의 출력만 가져와서 슬라이스로 반환하는 함수
-func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
+func UTxOutsByAddress(address string, b *blockchain) []*UTxOut {
 	var uTxOuts []*UTxOut
 	creatorTxs := make(map[string]bool)
-	for _, block := range b.Blocks() {
+	for _, block := range Blocks(b) {
 		for _, tx := range block.Transactions {
 			for _, input := range tx.TxIns {
 				if input.Owner == address {
@@ -130,8 +138,8 @@ func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
 	return uTxOuts
 }
 
-func (b *blockchain) BalanceByAddress(address string) int {
-	txOuts := b.UTxOutsByAddress(address)
+func BalanceByAddress(address string, b *blockchain) int {
+	txOuts := UTxOutsByAddress(address, b)
 	var amount int
 	for _, txOut := range txOuts {
 		amount += txOut.Amount
@@ -141,26 +149,24 @@ func (b *blockchain) BalanceByAddress(address string) int {
 
 // singleton 인스턴스 획득
 func Blockchain() *blockchain {
-	if b == nil {
-		// 처음 초기화하는 부분은 반드시 1번만 수행되도록
-		once.Do(func() {
-			// hash값이 없고, height가 0인 블록체인을 생성
-			b = &blockchain{
-				Height: 0,
-			}
+	// 처음 초기화하는 부분은 반드시 1번만 수행되도록
+	once.Do(func() {
+		// hash값이 없고, height가 0인 블록체인을 생성
+		b = &blockchain{
+			Height: 0,
+		}
 
-			// search for checkpoint on the db
-			checkpoint := db.Checkpoint()
+		// search for checkpoint on the db
+		checkpoint := db.Checkpoint()
 
-			// if checkpoint exist, decode b from bytes (b는 bytes로 저장되어있음)
-			if checkpoint == nil {
-				// checkpoint가 없음 즉, db 자체가 없음
-				b.AddBlock()
-			} else {
-				// decode b from bytes
-				b.restore(checkpoint)
-			}
-		})
-	}
+		// if checkpoint exist, decode b from bytes (b는 bytes로 저장되어있음)
+		if checkpoint == nil {
+			// checkpoint가 없음 즉, db 자체가 없음
+			b.AddBlock()
+		} else {
+			// decode b from bytes
+			b.restore(checkpoint)
+		}
+	})
 	return b
 }

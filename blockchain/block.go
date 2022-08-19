@@ -9,8 +9,6 @@ import (
 	"github.com/baaami/blockcoin/utils"
 )
 
-const difficulty int = 2
-
 type Block struct {
 	Hash         string `json:"hash"`
 	PrevHash     string `json:"prevHash,omitempty"`
@@ -57,12 +55,12 @@ func (b *Block) mine() {
 	}
 }
 
-func createBlock(prevHash string, height int) *Block {
+func createBlock(prevHash string, height, diff int) *Block {
 	block := Block{
 		Hash:       "",
 		PrevHash:   prevHash,
 		Height:     height,
-		Difficulty: Blockchain().difficulty(),
+		Difficulty: diff,
 		Nonce:      0,
 	}
 	// 작업 증명
