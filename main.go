@@ -1,10 +1,9 @@
 package main
 
 import (
-	"github.com/baaami/blockcoin/cli"
+	"github.com/baaami/blockcoin/wallet"
 )
 
 func main() {
-	//git commit user name 테스트
-	cli.Start()
+	wallet.Wallet()
 }
