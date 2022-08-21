@@ -12,16 +12,17 @@ import (
 
 type wallet struct {
 	privateKey *ecdsa.PrivateKey
+	address    string // hexa public key
 }
 
 const (
-	FileName string = "baami.wallet"
+	fileName string = "baami.wallet"
 )
 
 var w *wallet
 
 func hasWalletFile() bool {
-	_, err := os.Stat(FileName)
+	_, err := os.Stat(fileName)
 	return !os.IsNotExist(err)
 }
 
@@ -34,8 +35,16 @@ func createPrivKey() *ecdsa.PrivateKey {
 func persistKey(key *ecdsa.PrivateKey) {
 	bytes, err := x509.MarshalECPrivateKey(key)
 	utils.HandleErr(err)
-	err = os.WriteFile(FileName, bytes, 0644)
+	err = os.WriteFile(fileName, bytes, 0644)
 	utils.HandleErr(err)
+}
+
+func restoreKey() *ecdsa.PrivateKey {
+	keyAsBytes, err := os.ReadFile(fileName)
+	utils.HandleErr(err)
+	key, err := x509.ParseECPrivateKey(keyAsBytes)
+	utils.HandleErr(err)
+	return key
 }
 
 // signature, priavte key, public key 에 대서만
@@ -46,7 +55,7 @@ func Wallet() *wallet {
 
 		if hasWalletFile() {
 			// yes -> restore from file
-
+			w.privateKey = restoreKey()
 		} else {
 			// no -> create private key, save to file
 
