@@ -73,6 +73,24 @@ func persistBlockchain(b *blockchain) {
 	db.SaveBlockchain(utils.ToBytes(b))
 }
 
+func Txs(b *blockchain) []*Tx {
+	var txs []*Tx
+	for _, block := range Blocks(b) {
+		txs = append(txs, block.Transactions...)
+	}
+	return txs
+}
+
+func FindTx(b *blockchain, targetID string) *Tx {
+	for _, tx := range Txs(b) {
+		if tx.ID == targetID {
+			return tx
+		}
+	}
+
+	return nil
+}
+
 func recalculateDifficulty(b *blockchain) int {
 	// difficultyInterval 개의 블록을 생성하는데 얼마나 걸렸는지 알아야함
 	// 너무 오래 걸리면 difficulty를 줄이고 너무 적게 걸리면 늘려야함
@@ -116,13 +134,16 @@ func UTxOutsByAddress(address string, b *blockchain) []*UTxOut {
 	for _, block := range Blocks(b) {
 		for _, tx := range block.Transactions {
 			for _, input := range tx.TxIns {
-				if input.Owner == address {
+				if input.Signature == "COINBASE" {
+					break
+				}
+				if FindTx(b, input.TxID).TxOuts[input.Index].Address == address {
 					creatorTxs[input.TxID] = true
 				}
 			}
 
 			for index, output := range tx.TxOuts {
-				if output.Owner == address {
+				if output.Address == address {
 					if _, ok := creatorTxs[tx.ID]; !ok {
 						uTxOut := &UTxOut{tx.ID, index, output.Amount}
 						// uTxOut을 이미 mempool 에서 사용하였는지 체크

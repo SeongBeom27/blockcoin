@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/baaami/blockcoin/wallet"
+	"github.com/baaami/blockcoin/cli"
 )
 
 func main() {
-	wallet.Wallet()
+	cli.Start()
 }
