@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/baaami/blockcoin/blockchain"
+	"github.com/baaami/blockcoin/p2p"
 	"github.com/baaami/blockcoin/utils"
 	"github.com/baaami/blockcoin/wallet"
 	"github.com/gorilla/mux"
@@ -81,6 +82,11 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Method:      "GET",
 			Description: "Get TxOuts for an Owner",
 		},
+		{
+			URL:         url("/ws"),
+			Method:      "GET",
+			Description: "Upgrade to WebSockets",
+		},
 	}
 
 	// b, err := json.Marshal(data)
@@ -125,6 +131,13 @@ func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func loggerMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.URL)
+		next.ServeHTTP(rw, r)
+	})
+}
+
 func balance(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	address := vars["address"]
@@ -152,7 +165,9 @@ func transactions(rw http.ResponseWriter, r *http.Request) {
 	utils.HandleErr(json.NewDecoder(r.Body).Decode(&payload))
 	err := blockchain.Mempool.AddTx(payload.To, payload.Amount)
 	if err != nil {
-		json.NewEncoder(rw).Encode(errorResponse{"not enough funds"})
+		rw.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(rw).Encode(errorResponse{err.Error()})
+		return
 	}
 
 	rw.WriteHeader(http.StatusCreated)
@@ -161,7 +176,7 @@ func transactions(rw http.ResponseWriter, r *http.Request) {
 func Start(aPort int) {
 	router := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
-	router.Use(jsonContentTypeMiddleware)
+	router.Use(jsonContentTypeMiddleware, loggerMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/status", status).Methods("GET")
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
@@ -170,6 +185,7 @@ func Start(aPort int) {
 	router.HandleFunc("/mempool", mempool)
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
+	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
 
 	fmt.Printf("Listening on http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, router))
