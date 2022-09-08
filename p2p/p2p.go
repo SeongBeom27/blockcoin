@@ -3,6 +3,7 @@ package p2p
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/baaami/blockcoin/utils"
 	"github.com/gorilla/websocket"
@@ -21,7 +22,9 @@ func Upgrade(rw http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(rw, r, nil)
 	utils.HandleErr(err)
 
-	initPeer(conn, ip, openPort)
+	peer := initPeer(conn, ip, openPort)
+	time.Sleep(10 * time.Second)
+	peer.inbox <- []byte("Hello from 3000!")
 }
 
 func AddPeer(address, port, openPort string) {
@@ -30,5 +33,8 @@ func AddPeer(address, port, openPort string) {
 	conn, _, err := websocket.DefaultDialer.Dial(urlStr, nil)
 	utils.HandleErr(err)
 
-	initPeer(conn, address, port)
+	peer := initPeer(conn, address, port)
+
+	time.Sleep(10 * time.Second)
+	peer.inbox <- []byte("Hello from 4000!")
 }
