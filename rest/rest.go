@@ -49,6 +49,11 @@ type addTxPayload struct {
 	Amount int
 }
 
+type addPeerPayload struct {
+	Address string
+	Port    string
+}
+
 func documentation(rw http.ResponseWriter, r *http.Request) {
 	data := []urlDescription{
 		{
@@ -173,6 +178,19 @@ func transactions(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusCreated)
 }
 
+func peers(rw http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		var payload addPeerPayload
+		// POST 데이터 형식에 맞는 구조체를 선언 후 주솟값을 넘겨줌
+		json.NewDecoder(r.Body).Decode(&payload)
+		p2p.AddPeer(payload.Address, payload.Port, port)
+		rw.WriteHeader(http.StatusOK)
+	case "GET":
+		json.NewEncoder(rw).Encode(p2p.Peers)
+	}
+}
+
 func Start(aPort int) {
 	router := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
@@ -185,6 +203,7 @@ func Start(aPort int) {
 	router.HandleFunc("/mempool", mempool)
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
+	router.HandleFunc("/peers", peers).Methods("GET", "POST")
 	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
 
 	fmt.Printf("Listening on http://localhost%s\n", port)

@@ -1,31 +1,34 @@
 package p2p
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/baaami/blockcoin/utils"
 	"github.com/gorilla/websocket"
 )
 
-var conns []*websocket.Conn
 var upgrader = websocket.Upgrader{}
 
 func Upgrade(rw http.ResponseWriter, r *http.Request) {
+	// Port :3000 will upgrade the request from :4000
+	openPort := r.URL.Query().Get("openPort")
+	ip := utils.Splitter(r.RemoteAddr, ":", 0)
 	upgrader.CheckOrigin = func(r *http.Request) bool {
-		return true
+		return openPort != "" && ip != ""
 	}
+
 	conn, err := upgrader.Upgrade(rw, r, nil)
-	conns = append(conns, conn)
 	utils.HandleErr(err)
-	for {
-		_, p, err := conn.ReadMessage()
-		if err != nil {
-			break
-		}
-		for _, aConn := range conns {
-			if aConn != conn {
-				utils.HandleErr(aConn.WriteMessage(websocket.TextMessage, p))
-			}
-		}
-	}
+
+	initPeer(conn, ip, openPort)
+}
+
+func AddPeer(address, port, openPort string) {
+	// Port :4000 is requesting an upgrade rom the port :3000
+	urlStr := fmt.Sprintf("ws://%s:%s/ws?openPort=%s", address, port, openPort[1:])
+	conn, _, err := websocket.DefaultDialer.Dial(urlStr, nil)
+	utils.HandleErr(err)
+
+	initPeer(conn, address, port)
 }
