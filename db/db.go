@@ -1,6 +1,9 @@
 package db
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/baaami/blockcoin/utils"
 	bolt "go.etcd.io/bbolt"
 )
@@ -14,10 +17,15 @@ const (
 
 var db *bolt.DB
 
+func getDbName() string {
+	port := os.Args[2][6:]
+	return fmt.Sprintf("%s_%s.db", dbName, port)
+}
+
 func DB() *bolt.DB {
 	if db == nil {
 		// init db
-		dbPointer, err := bolt.Open("blockchain.db", 0600, nil)
+		dbPointer, err := bolt.Open(getDbName(), 0600, nil)
 		db = dbPointer
 		utils.HandleErr(err)
 

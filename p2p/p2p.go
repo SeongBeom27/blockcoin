@@ -18,6 +18,8 @@ func Upgrade(rw http.ResponseWriter, r *http.Request) {
 		return openPort != "" && ip != ""
 	}
 
+	fmt.Printf("%s wants to upgrade\n", openPort)
+
 	conn, err := upgrader.Upgrade(rw, r, nil)
 	utils.HandleErr(err)
 
@@ -26,6 +28,8 @@ func Upgrade(rw http.ResponseWriter, r *http.Request) {
 
 func AddPeer(address, port, openPort string) {
 	// Port :4000 is requesting an upgrade rom the port :3000
+	fmt.Printf("%s wants to connect to port %s\n", openPort, port)
+
 	urlStr := fmt.Sprintf("ws://%s:%s/ws?openPort=%s", address, port, openPort[1:])
 	conn, _, err := websocket.DefaultDialer.Dial(urlStr, nil)
 	utils.HandleErr(err)
