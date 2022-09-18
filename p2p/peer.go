@@ -51,7 +51,7 @@ func (p *peer) read() {
 			// delete peer
 			break
 		}
-		fmt.Print(m.Kind)
+		handleMsg(&m, p)
 	}
 }
 
@@ -77,6 +77,10 @@ func initPeer(conn *websocket.Conn, address, port string) *peer {
 	}
 	go p.read()
 	go p.write()
+
+	Peers.m.Lock()
+	defer Peers.m.Unlock()
 	Peers.v[key] = p
+
 	return p
 }

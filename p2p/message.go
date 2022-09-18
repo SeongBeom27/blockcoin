@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/baaami/blockcoin/blockchain"
 	"github.com/baaami/blockcoin/utils"
@@ -15,20 +16,12 @@ const (
 	MessageAllBlocksResponse
 )
 
-func (m *Message) addPayload(p interface{}) {
-	b, err := json.Marshal(p)
-	utils.HandleErr(err)
-	m.Payload = b
-}
-
 func makeMessage(kind MessageKind, payload interface{}) []byte {
 	m := Message{
-		Kind: kind,
+		Kind:    kind,
+		Payload: utils.ToJSON(payload),
 	}
-	m.addPayload(payload)
-	mJson, err := json.Marshal(m)
-	utils.HandleErr(err)
-	return mJson
+	return utils.ToJSON(m)
 }
 
 func sendNewestBlock(p *peer) {
@@ -44,4 +37,16 @@ type Message struct {
 	// Message 종류 유형
 	Kind    MessageKind
 	Payload []byte
+}
+
+func handleMsg(m *Message, p *peer) {
+	switch m.Kind {
+	case MessageNewestBlock:
+		var payload blockchain.Block
+		err := json.Unmarshal(m.Payload, &payload)
+		utils.HandleErr(err)
+
+		fmt.Println(payload)
+	}
+	// fmt.Printf("Peer: %s, Sent a message with kind of: %d", p.key, m.Kind)
 }
