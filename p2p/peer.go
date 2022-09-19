@@ -62,17 +62,6 @@ func (p *peer) write() {
 		if !ok {
 			break
 		}
-		handleMsg(&m, p)
-	}
-}
-
-func (p *peer) write() {
-	defer p.close()
-	for {
-		m, ok := <-p.inbox
-		if !ok {
-			break
-		}
 		p.conn.WriteMessage(websocket.TextMessage, m)
 	}
 }

@@ -26,7 +26,7 @@ func makeMessage(kind MessageKind, payload interface{}) []byte {
 
 func sendNewestBlock(p *peer) {
 	fmt.Printf("Sending newest block to %s\n", p.key)
-	
+
 	// 마지막 해시값
 	b, err := blockchain.FindBlock(blockchain.Blockchain().NewestHash)
 	utils.HandleErr(err)
@@ -80,8 +80,10 @@ func handleMsg(m *Message, p *peer) {
 		sendAllBlocks(p)
 	case MessageAllBlocksResponse:
 		fmt.Printf("Received all the blocks %s wants all the blocks.\n", p.key)
-		var payload []blockchain.Block
+		var payload []*blockchain.Block
 		err := json.Unmarshal(m.Payload, &payload)
 		utils.HandleErr(err)
+
+		blockchain.Blockchain().Replace(payload)
 	}
 }
