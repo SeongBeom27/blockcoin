@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"net/http"
 	"sync"
 
 	"github.com/baaami/blockcoin/db"
@@ -18,9 +20,9 @@ type blockchain struct {
 	// 1. 새로운 블록을 만들기 위해서 마지막 해쉬를 알아야함
 	NewestHash string `json:"newestHash"`
 	// 2. Height를 알아야함
-	Height int `json:"height"`
-
+	Height            int `json:"height"`
 	CurrentDifficulty int `json:"currentDifficulty"`
+	m                 sync.Mutex
 }
 
 // sigleton
@@ -31,6 +33,8 @@ var once sync.Once
 	모든 block을 획득
 */
 func Blocks(b *blockchain) []*Block {
+	b.m.Lock()
+	defer b.m.Unlock()
 	var blocks []*Block
 
 	// 1. NewestHash로 마지막 block을 찾는다
@@ -61,12 +65,13 @@ func (b *blockchain) restore(data []byte) {
 	utils.FromBytes(b, data)
 }
 
-func (b *blockchain) AddBlock() {
+func (b *blockchain) AddBlock() *Block {
 	block := createBlock(b.NewestHash, b.Height+1, getDifficulty(b))
 	b.NewestHash = block.Hash
 	b.Height = block.Height
 	b.CurrentDifficulty = block.Difficulty
 	persistBlockchain(b)
+	return block
 }
 
 func persistBlockchain(b *blockchain) {
@@ -192,7 +197,16 @@ func Blockchain() *blockchain {
 	return b
 }
 
+func Status(b *blockchain, rw http.ResponseWriter) {
+	b.m.Lock()
+	defer b.m.Unlock()
+
+	utils.HandleErr(json.NewEncoder(rw).Encode(b))
+}
+
 func (b *blockchain) Replace(newBlocks []*Block) {
+	b.m.Lock()
+	defer b.m.Unlock()
 	b.CurrentDifficulty = newBlocks[0].Difficulty
 	b.Height = len(newBlocks)
 	b.NewestHash = newBlocks[0].Hash
@@ -202,4 +216,18 @@ func (b *blockchain) Replace(newBlocks []*Block) {
 	for _, block := range newBlocks {
 		persistBlock(block)
 	}
+}
+
+func (b *blockchain) AddPeerBlock(block *Block) {
+	b.m.Lock()
+	defer b.m.Unlock()
+
+	b.Height += 1
+	b.CurrentDifficulty = block.Difficulty
+	b.NewestHash = block.Hash
+
+	persistBlockchain(b)
+	persistBlock(block)
+
+	// TODO: mempool
 }
