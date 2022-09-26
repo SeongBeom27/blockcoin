@@ -105,5 +105,6 @@ func handleMsg(m *Message, p *peer) {
 	case MessageNewTxNotify:
 		var payload *blockchain.Tx
 		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
+		blockchain.Mempool().AddPeerTx(payload)
 	}
 }

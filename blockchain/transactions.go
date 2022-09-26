@@ -88,7 +88,7 @@ type UTxOut struct {
 func isOnMempool(UTxOut *UTxOut) bool {
 	exists := false
 Outer:
-	for _, tx := range Mempool.Txs {
+	for _, tx := range Mempool().Txs {
 		for _, input := range tx.TxIns {
 			if input.TxID == UTxOut.TxID && input.Index == UTxOut.Index {
 				exists = true
@@ -178,4 +178,11 @@ func (m *mempool) TxToConfirm() []*Tx {
 	txs = append(txs, coinbase)
 	m.Txs = nil
 	return txs
+}
+
+func (m *mempool) AddPeerTx(tx *Tx) {
+	m.m.Lock()
+	defer m.m.Unlock()
+
+	m.Txs = append(m.Txs, tx)
 }
