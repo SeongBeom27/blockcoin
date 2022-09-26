@@ -185,7 +185,7 @@ func peers(rw http.ResponseWriter, r *http.Request) {
 		var payload addPeerPayload
 		// POST 데이터 형식에 맞는 구조체를 선언 후 주솟값을 넘겨줌
 		json.NewDecoder(r.Body).Decode(&payload)
-		p2p.AddPeer(payload.Address, payload.Port, port)
+		p2p.AddPeer(payload.Address, payload.Port, port[1:], true)
 		rw.WriteHeader(http.StatusOK)
 	case "GET":
 		json.NewEncoder(rw).Encode(p2p.AllPeers(&p2p.Peers))
